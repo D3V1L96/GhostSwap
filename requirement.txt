@@ -1,0 +1,10 @@
+torch
+torchvision
+insightface
+onnxruntime-gpu  # or onnxruntime if no GPU
+opencv-python
+gradio
+numpy
+pillow
+gfpgan
+codeformer  # if pip works, else manual
