@@ -1,0 +1,769 @@
+Here is the complete, single-file `index.html` for **GhostSwap**.
+
+This file contains the cinematic loading sequence, the interactive state simulator, responsive design, and all styling/logic required. Save this directly to your repository root.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GhostSwap | Control The Identity</title>
+    <meta name="description" content="Experimental cybersecurity utility for controlled identity, session, and state manipulation in authorized testing environments.">
+    
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="GhostSwap - Experimental Identity Utility">
+    <meta property="og:description" content="Control the Identity. Control the Reality. An experimental system for session and state exploration.">
+    <meta property="theme-color" content="#070709">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- 1. VARIABLES & RESET --- */
+        :root {
+            --bg-primary: #070709;
+            --bg-secondary: #0D0D12;
+            --bg-card: #12121A;
+            --bg-elevated: #191923;
+            
+            --accent-primary: #8B5CF6;
+            --accent-secondary: #A78BFA;
+            --accent-danger: #EF4444;
+            
+            --text-primary: #F5F3FF;
+            --text-secondary: #A1A1AA;
+            --text-muted: #666675;
+            
+            --border-color: rgba(167, 139, 250, 0.13);
+            --border-hover: rgba(167, 139, 250, 0.3);
+            
+            --font-head: 'Space Grotesk', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            
+            --nav-height: 70px;
+            --container: 1200px;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        html {
+            scroll-behavior: smooth;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body { overflow-x: hidden; min-height: 100vh; position: relative; }
+        
+        /* Background Grid & Noise */
+        .sys-bg {
+            position: fixed; inset: 0; z-index: -1; pointer-events: none;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.08) 0%, transparent 60%),
+                linear-gradient(to bottom, var(--bg-primary), var(--bg-secondary));
+        }
+        .sys-grid {
+            position: absolute; inset: 0;
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+            mask-image: radial-gradient(circle at center, black 40%, transparent 80%);
+            -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 80%);
+        }
+
+        a { text-decoration: none; color: inherit; transition: 0.3s ease; }
+        ul { list-style: none; }
+        svg { display: block; max-width: 100%; }
+
+        /* Typography */
+        h1, h2, h3, h4 { font-family: var(--font-head); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+        .mono { font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.05em; }
+        .gradient-text {
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .text-center { text-align: center; }
+        .uppercase { text-transform: uppercase; letter-spacing: 0.1em; }
+
+        /* Layout */
+        .container { max-width: var(--container); margin: 0 auto; padding: 0 24px; }
+        section { padding: 100px 0; position: relative; }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 12px 28px; border-radius: 4px; font-weight: 600; font-size: 0.9rem;
+            cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .btn-primary {
+            background: var(--accent-primary); color: #fff;
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+        }
+        .btn-primary:hover { background: var(--accent-secondary); box-shadow: 0 0 30px rgba(139, 92, 246, 0.4); transform: translateY(-2px); }
+        .btn-secondary { border-color: var(--border-hover); color: var(--text-primary); background: transparent; }
+        .btn-secondary:hover { border-color: var(--accent-primary); color: var(--accent-primary); background: rgba(139, 92, 246, 0.05); }
+
+        /* --- 2. CINEMATIC LOADER --- */
+        #loader {
+            position: fixed; inset: 0; z-index: 9999; background: var(--bg-primary);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.8s ease, visibility 0.8s;
+        }
+        .loader-emblem { width: 80px; height: 80px; margin-bottom: 32px; position: relative; }
+        .loader-emblem svg { width: 100%; height: 100%; stroke: var(--accent-primary); fill: none; stroke-width: 1.5; }
+        .scan-line {
+            position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            background: var(--accent-primary); box-shadow: 0 0 10px var(--accent-primary);
+            animation: scan 2s linear infinite; opacity: 0.8;
+        }
+        @keyframes scan { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+
+        .loader-text { font-family: var(--font-mono); font-size: 0.9rem; color: var(--accent-secondary); margin-bottom: 8px; min-height: 1.4em; }
+        .loader-bar-container { width: 200px; height: 2px; background: rgba(255,255,255,0.1); margin-top: 16px; position: relative; overflow: hidden; }
+        .loader-bar { height: 100%; background: var(--accent-primary); width: 0%; transition: width 0.1s linear; box-shadow: 0 0 8px var(--accent-primary); }
+        .loader-percent { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted); margin-top: 8px; }
+
+        body.loaded #loader { opacity: 0; visibility: hidden; pointer-events: none; }
+
+        /* --- 3. NAVIGATION --- */
+        nav {
+            position: fixed; top: 0; left: 0; width: 100%; height: var(--nav-height); z-index: 1000;
+            background: rgba(7, 7, 9, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color); transition: background 0.3s;
+        }
+        .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 100%; }
+        .logo { display: flex; align-items: center; gap: 10px; font-family: var(--font-head); font-weight: 700; font-size: 1.2rem; }
+        .logo svg { width: 24px; height: 24px; stroke: var(--accent-primary); fill: none; stroke-width: 2; }
+        .nav-links { display: flex; gap: 32px; }
+        .nav-links a { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+        .nav-links a:hover, .nav-links a.active { color: var(--accent-primary); }
+        .nav-actions { display: flex; gap: 16px; align-items: center; }
+        .gh-icon { width: 20px; height: 20px; fill: var(--text-secondary); transition: 0.3s; }
+        .gh-icon:hover { fill: var(--text-primary); }
+        .mobile-toggle { display: none; background: none; border: none; color: var(--text-primary); cursor: pointer; }
+
+        /* --- 4. HERO --- */
+        #hero { padding-top: calc(var(--nav-height) + 80px); min-height: 100vh; display: flex; align-items: center; }
+        .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+        .hero-label { display: inline-block; padding: 6px 12px; border: 1px solid var(--border-color); border-radius: 100px; color: var(--accent-secondary); margin-bottom: 24px; background: rgba(139,92,246,0.05); }
+        .hero-title { font-size: clamp(2.8rem, 5vw, 4.5rem); margin-bottom: 24px; line-height: 1.05; }
+        .hero-desc { font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 40px; max-width: 500px; }
+        .hero-btns { display: flex; gap: 16px; margin-bottom: 48px; flex-wrap: wrap; }
+        .hero-meta { display: flex; gap: 24px; flex-wrap: wrap; }
+        .meta-item { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-muted); }
+        .meta-dot { width: 4px; height: 4px; background: var(--accent-primary); border-radius: 50%; }
+
+        /* Hero Visual */
+        .hero-visual { position: relative; width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
+        .identity-core { position: relative; width: 300px; height: 300px; }
+        .id-ring {
+            position: absolute; inset: 0; border: 1px solid var(--border-color); border-radius: 50%;
+            animation: spin 20s linear infinite;
+        }
+        .id-ring::before { content:''; position: absolute; top: -2px; left: 50%; width: 4px; height: 4px; background: var(--accent-primary); border-radius: 50%; box-shadow: 0 0 10px var(--accent-primary); }
+        .id-ring.inner { inset: 40px; border-color: var(--border-hover); animation-direction: reverse; animation-duration: 15s; }
+        .ghost-silhouette { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0.8; }
+        .ghost-silhouette svg { width: 120px; height: 120px; stroke: var(--accent-secondary); fill: none; stroke-width: 1; filter: drop-shadow(0 0 8px rgba(139,92,246,0.3)); }
+        .hex-particle { position: absolute; font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent-primary); opacity: 0; animation: floatHex 4s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes floatHex { 0% { opacity: 0; transform: translateY(10px); } 50% { opacity: 0.7; } 100% { opacity: 0; transform: translateY(-20px); } }
+
+        /* --- 5. INTRO CARDS --- */
+        .intro-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-top: 48px; }
+        .card { background: var(--bg-card); border: 1px solid var(--border-color); padding: 32px; border-radius: 8px; transition: 0.3s; position: relative; overflow: hidden; }
+        .card:hover { border-color: var(--accent-primary); transform: translateY(-4px); background: var(--bg-elevated); }
+        .card::after { content:''; position: absolute; top:0; left:0; width:100%; height:2px; background: var(--accent-primary); transform: scaleX(0); transform-origin: left; transition: 0.3s; }
+        .card:hover::after { transform: scaleX(1); }
+        .card-icon { width: 40px; height: 40px; margin-bottom: 20px; color: var(--accent-secondary); }
+        .card h3 { font-size: 1.2rem; margin-bottom: 12px; }
+        .card p { color: var(--text-secondary); font-size: 0.9rem; }
+
+        /* --- 6. CAPABILITIES --- */
+        .cap-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-top: 48px; }
+        .cap-item { display: flex; gap: 16px; padding: 24px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; }
+        .cap-num { font-family: var(--font-mono); color: var(--accent-primary); font-size: 0.9rem; margin-top: 2px; }
+        .cap-content h4 { font-size: 1rem; margin-bottom: 6px; }
+        .cap-content p { font-size: 0.85rem; color: var(--text-muted); }
+
+        /* --- 7. ARCHITECTURE --- */
+        .arch-diagram { margin-top: 60px; padding: 40px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; overflow-x: auto; }
+        .pipeline { display: flex; align-items: center; justify-content: space-between; min-width: 800px; position: relative; gap: 10px; }
+        .pipeline::before { content:''; position: absolute; top:50%; left:0; width:100%; height:1px; background: var(--border-color); z-index:0; }
+        .node { position: relative; z-index: 1; background: var(--bg-elevated); border: 1px solid var(--border-color); padding: 16px 24px; border-radius: 4px; text-align: center; min-width: 120px; transition: 0.3s; }
+        .node:hover { border-color: var(--accent-primary); box-shadow: 0 0 15px rgba(139,92,246,0.15); }
+        .node-label { font-size: 0.75rem; font-weight: 600; margin-bottom: 4px; }
+        .node-sub { font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono); }
+        .flow-pulse { position: absolute; top:50%; left:0; width:6px; height:6px; background: var(--accent-primary); border-radius: 50%; box-shadow: 0 0 8px var(--accent-primary); animation: flow 3s linear infinite; z-index: 2; transform: translateY(-50%); }
+        @keyframes flow { 0% { left:0; opacity:0; } 10% { opacity:1; } 90% { opacity:1; } 100% { left:100%; opacity:0; } }
+
+        /* --- 8. INTERACTIVE SIMULATOR --- */
+        .sim-panel { margin-top: 48px; background: #000; border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; position: relative; }
+        .sim-header { padding: 16px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-elevated); }
+        .sim-badge { padding: 4px 8px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: var(--accent-danger); font-size: 0.65rem; border-radius: 4px; }
+        .sim-body { padding: 40px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 40px; align-items: center; min-height: 300px; }
+        .id-card { background: var(--bg-card); border: 1px solid var(--border-color); padding: 24px; border-radius: 8px; text-align: center; transition: 0.5s; position: relative; }
+        .id-card.active { border-color: var(--accent-primary); box-shadow: 0 0 20px rgba(139,92,246,0.1); }
+        .id-avatar { width: 60px; height: 60px; margin: 0 auto 16px; border-radius: 50%; background: var(--bg-elevated); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; }
+        .id-avatar svg { width: 30px; height: 30px; stroke: var(--text-muted); fill: none; }
+        .id-card.active .id-avatar { border-color: var(--accent-primary); }
+        .id-card.active .id-avatar svg { stroke: var(--accent-primary); }
+        .id-status { margin-top: 12px; font-family: var(--font-mono); font-size: 0.8rem; }
+        .status-active { color: var(--accent-primary); }
+        .status-standby { color: var(--text-muted); }
+        .swap-control { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+        .swap-btn { width: 60px; height: 60px; border-radius: 50%; border: 1px solid var(--border-hover); background: var(--bg-elevated); color: var(--accent-primary); cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
+        .swap-btn:hover { background: var(--accent-primary); color: #fff; box-shadow: 0 0 20px rgba(139,92,246,0.4); }
+        .swap-btn svg { width: 24px; height: 24px; fill: currentColor; transition: transform 0.5s; }
+        .swap-btn.animating svg { transform: rotate(180deg); }
+        .sim-log { margin-top: 20px; padding: 16px; background: var(--bg-secondary); font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted); height: 80px; overflow-y: auto; border-top: 1px solid var(--border-color); }
+        .log-entry { margin-bottom: 4px; }
+        .log-entry span { color: var(--accent-secondary); margin-right: 8px; }
+
+        /* --- 9. SECURITY WARNING --- */
+        .security-section { background: linear-gradient(to bottom, var(--bg-primary), rgba(239,68,68,0.03)); }
+        .warning-box { margin-top: 40px; padding: 24px; border: 1px solid rgba(239,68,68,0.3); background: rgba(239,68,68,0.05); border-radius: 8px; display: flex; gap: 16px; align-items: flex-start; }
+        .warning-icon { flex-shrink: 0; width: 24px; height: 24px; color: var(--accent-danger); margin-top: 2px; }
+        .warning-text h4 { color: var(--accent-danger); margin-bottom: 8px; font-size: 1rem; }
+        .warning-text p { color: var(--text-secondary); font-size: 0.9rem; }
+
+        /* --- 10. TECH INFO --- */
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1px; background: var(--border-color); border: 1px solid var(--border-color); margin-top: 40px; }
+        .info-item { background: var(--bg-card); padding: 24px; }
+        .info-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
+        .info-val { font-family: var(--font-mono); font-size: 0.9rem; color: var(--text-primary); }
+
+        /* --- 11. ROADMAP --- */
+        .roadmap { max-width: 700px; margin: 60px auto 0; position: relative; padding-left: 30px; border-left: 1px solid var(--border-color); }
+        .rm-item { position: relative; margin-bottom: 40px; }
+        .rm-item::before { content:''; position: absolute; left: -35px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--bg-primary); border: 2px solid var(--text-muted); }
+        .rm-item.current::before { border-color: var(--accent-primary); background: var(--accent-primary); box-shadow: 0 0 10px var(--accent-primary); }
+        .rm-tag { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; display: block; }
+        .rm-tag.current { color: var(--accent-primary); }
+        .rm-tag.planned { color: var(--text-muted); }
+
+        /* --- 12. FOOTER --- */
+        footer { border-top: 1px solid var(--border-color); padding: 80px 0 40px; margin-top: 100px; background: var(--bg-primary); }
+        .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px; margin-bottom: 60px; }
+        .footer-brand p { color: var(--text-muted); margin-top: 16px; font-size: 0.9rem; max-width: 300px; }
+        .footer-col h4 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 20px; color: var(--text-secondary); }
+        .footer-col a { display: block; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 12px; }
+        .footer-col a:hover { color: var(--accent-primary); }
+        .footer-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 32px; border-top: 1px solid var(--border-color); font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono); }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .hero-grid { grid-template-columns: 1fr; text-align: center; gap: 40px; }
+            .hero-content { margin: 0 auto; }
+            .hero-btns, .hero-meta { justify-content: center; }
+            .sim-body { grid-template-columns: 1fr; gap: 24px; }
+            .swap-control { flex-direction: row; justify-content: center; }
+            .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+        }
+        @media (max-width: 768px) {
+            .nav-links, .nav-actions .btn { display: none; }
+            .mobile-toggle { display: block; }
+            .hero-title { font-size: 2.5rem; }
+            section { padding: 60px 0; }
+            .pipeline { min-width: 600px; }
+            .footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
+        }
+
+        /* Mobile Menu */
+        .mobile-menu { position: fixed; top: var(--nav-height); left: 0; width: 100%; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); padding: 24px; display: none; flex-direction: column; gap: 16px; z-index: 999; }
+        .mobile-menu.open { display: flex; }
+        .mobile-menu a { font-size: 1rem; color: var(--text-secondary); padding: 8px 0; }
+
+        /* Reveal Animation */
+        .reveal { opacity: 0; transform: translateY(30px); transition: 0.8s cubic-bezier(0.5, 0, 0, 1); }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+
+        /* Reduced Motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+            .reveal { opacity: 1; transform: none; }
+            #loader { display: none; }
+            body { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- CINEMATIC LOADER -->
+    <div id="loader">
+        <div class="loader-emblem">
+            <svg viewBox="0 0 24 24"><path d="M12 2C8 2 4 5 4 9c0 4 3 7 3 11h10c0-4 3-7 3-11 0-4-4-7-8-7z"/><circle cx="9" cy="9" r="1.5"/><circle cx="15" cy="9" r="1.5"/></svg>
+            <div class="scan-line"></div>
+        </div>
+        <div class="loader-text" id="loaderText">ESTABLISHING SECURE ENVIRONMENT...</div>
+        <div class="loader-bar-container"><div class="loader-bar" id="loaderBar"></div></div>
+        <div class="loader-percent" id="loaderPercent">0%</div>
+    </div>
+
+    <div class="sys-bg"><div class="sys-grid"></div></div>
+
+    <!-- NAVIGATION -->
+    <nav id="navbar">
+        <div class="container nav-inner">
+            <a href="#" class="logo">
+                <svg viewBox="0 0 24 24"><path d="M12 2C8 2 4 5 4 9c0 4 3 7 3 11h10c0-4 3-7 3-11 0-4-4-7-8-7z"/><circle cx="9" cy="9" r="1.5"/><circle cx="15" cy="9" r="1.5"/></svg>
+                GHOSTSWAP
+            </a>
+            <ul class="nav-links">
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#capabilities">Capabilities</a></li>
+                <li><a href="#architecture">Architecture</a></li>
+                <li><a href="#security">Security</a></li>
+                <li><a href="#about">About</a></li>
+            </ul>
+            <div class="nav-actions">
+                <a href="https://github.com/D3V1L96/GhostSwap" target="_blank" rel="noopener" aria-label="GitHub">
+                    <svg class="gh-icon" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                </a>
+                <a href="https://github.com/D3V1L96/GhostSwap" target="_blank" class="btn btn-primary">SOURCE CODE</a>
+                <button class="mobile-toggle" aria-label="Menu">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="#overview">Overview</a>
+        <a href="#capabilities">Capabilities</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#security">Security</a>
+        <a href="#about">About</a>
+        <a href="https://github.com/D3V1L96/GhostSwap" target="_blank">GitHub Repository</a>
+    </div>
+
+    <!-- HERO -->
+    <section id="overview">
+        <div class="container hero-grid">
+            <div class="hero-content reveal">
+                <span class="mono hero-label uppercase">EXPERIMENTAL CYBERSECURITY UTILITY</span>
+                <h1 class="hero-title">CONTROL THE <br><span class="gradient-text">IDENTITY.</span><br>CONTROL THE REALITY.</h1>
+                <p class="hero-desc">GhostSwap is an experimental utility designed to explore controlled identity, session, and state manipulation within authorized testing environments.</p>
+                <div class="hero-btns">
+                    <a href="#architecture" class="btn btn-primary">EXPLORE THE SYSTEM</a>
+                    <a href="https://github.com/D3V1L96/GhostSwap" target="_blank" class="btn btn-secondary">VIEW SOURCE CODE</a>
+                </div>
+                <div class="hero-meta mono uppercase">
+                    <div class="meta-item"><span class="meta-dot"></span>EXPERIMENTAL PROJECT</div>
+                    <div class="meta-item"><span class="meta-dot"></span>CONTROLLED ENVIRONMENT</div>
+                    <div class="meta-item"><span class="meta-dot"></span>MIT LICENSE</div>
+                </div>
+            </div>
+            <div class="hero-visual reveal">
+                <div class="identity-core">
+                    <div class="id-ring"></div>
+                    <div class="id-ring inner"></div>
+                    <div class="ghost-silhouette">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C8 2 4 5 4 9c0 4 3 7 3 11h10c0-4 3-7 3-11 0-4-4-7-8-7z"/><circle cx="9" cy="9" r="1.5"/><circle cx="15" cy="9" r="1.5"/></svg>
+                    </div>
+                    <!-- Floating Hex Particles -->
+                    <div class="hex-particle" style="top:10%; left:20%; animation-delay:0s;">0x8F</div>
+                    <div class="hex-particle" style="top:70%; left:80%; animation-delay:1s;">0xA2</div>
+                    <div class="hex-particle" style="top:30%; left:90%; animation-delay:2s;">0xC1</div>
+                    <div class="hex-particle" style="top:80%; left:10%; animation-delay:3s;">0x9B</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- INTRODUCTION -->
+    <section id="intro">
+        <div class="container">
+            <div class="text-center reveal" style="max-width:800px; margin:0 auto;">
+                <h2 style="font-size:2.5rem; margin-bottom:24px;">NOT EVERYTHING IS WHAT IT APPEARS TO BE.</h2>
+                <p style="color:var(--text-secondary); font-size:1.1rem;">Modern applications depend on sessions, identities, and dynamic state management. GhostSwap explores how these mechanisms can be studied, simulated, and tested within controlled environments.</p>
+            </div>
+            <div class="intro-grid">
+                <div class="card reveal">
+                    <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+                    <h3>Identity Exploration</h3>
+                    <p>Study identity-related state transitions and their behavior across different application layers.</p>
+                </div>
+                <div class="card reveal">
+                    <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <h3>Session Experiments</h3>
+                    <p>Explore session handling mechanisms and lifecycle events in authorized test environments.</p>
+                </div>
+                <div class="card reveal">
+                    <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    <h3>Controlled Simulation</h3>
+                    <p>Simulate user states and evaluate authentication-system resilience against edge cases.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CAPABILITIES -->
+    <section id="capabilities">
+        <div class="container">
+            <div class="reveal">
+                <span class="mono" style="color:var(--accent-primary)">SYSTEM FUNCTIONS</span>
+                <h2 style="font-size:2.5rem; margin-top:12px;">BUILT FOR CONTROLLED EXPERIMENTATION.</h2>
+            </div>
+            <div class="cap-grid">
+                <div class="cap-item reveal"><div class="cap-num">01</div><div class="cap-content"><h4>Identity State Exploration</h4><p>Analyze how identity objects mutate during runtime.</p></div></div>
+                <div class="cap-item reveal"><div class="cap-num">02</div><div class="cap-content"><h4>Session Handling Experiments</h4><p>Test session creation, persistence, and invalidation logic.</p></div></div>
+                <div class="cap-item reveal"><div class="cap-num">03</div><div class="cap-content"><h4>Dynamic State Simulation</h4><p>Inject controlled state changes to observe system reactions.</p></div></div>
+                <div class="cap-item reveal"><div class="cap-num">04</div><div class="cap-content"><h4>Authentication Testing</h4><p>Verify auth flows against unexpected state configurations.</p></div></div>
+                <div class="cap-item reveal"><div class="cap-num">05</div><div class="cap-content"><h4>Lightweight Architecture</h4><p>Minimal footprint designed for isolated lab integration.</p></div></div>
+                <div class="cap-item reveal"><div class="cap-num">06</div><div class="cap-content"><h4>Controlled Lab Workflows</h4><p>Built specifically for safe, authorized research environments.</p></div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section id="architecture">
+        <div class="container">
+            <div class="text-center reveal">
+                <span class="mono" style="color:var(--accent-secondary)">SYSTEM DESIGN</span>
+                <h2 style="font-size:2.5rem; margin-top:12px;">UNDERSTAND THE MECHANISM.</h2>
+            </div>
+            <div class="arch-diagram reveal">
+                <div class="pipeline">
+                    <div class="flow-pulse"></div>
+                    <div class="node"><div class="node-label">ENVIRONMENT</div><div class="node-sub">ISOLATED LAB</div></div>
+                    <div class="node"><div class="node-label">TEST INPUT</div><div class="node-sub">PARAMS / CONFIG</div></div>
+                    <div class="node"><div class="node-label">STATE LAYER</div><div class="node-sub">IDENTITY / SESSION</div></div>
+                    <div class="node"><div class="node-label">SWAP SIM</div><div class="node-sub">TRANSITION LOGIC</div></div>
+                    <div class="node"><div class="node-label">VALIDATION</div><div class="node-sub">INTEGRITY CHECK</div></div>
+                    <div class="node"><div class="node-label">RESULT</div><div class="node-sub">PASS / FAIL / LOG</div></div>
+                </div>
+                <p class="mono text-center" style="margin-top:24px; font-size:0.7rem; color:var(--text-muted);">CONCEPTUAL ARCHITECTURE VISUALIZATION. ACTUAL IMPLEMENTATION DEPENDS ON REPOSITORY MODULES.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- INTERACTIVE SIMULATOR -->
+    <section id="demo">
+        <div class="container">
+            <div class="reveal">
+                <span class="mono" style="color:var(--accent-primary)">INTERACTIVE PREVIEW</span>
+                <h2 style="font-size:2rem; margin-top:12px;">GHOSTSWAP // STATE SIMULATOR</h2>
+            </div>
+            <div class="sim-panel reveal">
+                <div class="sim-header">
+                    <span class="mono" style="color:var(--text-secondary)">STATE_SIMULATOR_V0.9</span>
+                    <span class="sim-badge mono">FRONTEND DEMO ONLY — NO REAL SESSION MODIFICATION</span>
+                </div>
+                <div class="sim-body">
+                    <!-- Identity A -->
+                    <div class="id-card active" id="idCardA">
+                        <div class="id-avatar"><svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg></div>
+                        <div class="mono" style="font-size:0.75rem; color:var(--text-muted);">IDENTITY_A</div>
+                        <div class="id-status status-active" id="statusA">STATE: ACTIVE</div>
+                        <div class="mono" style="font-size:0.65rem; color:var(--text-muted); margin-top:4px;">ENV: TEST_LAB</div>
+                    </div>
+
+                    <!-- Swap Control -->
+                    <div class="swap-control">
+                        <button class="swap-btn" id="swapBtn" aria-label="Simulate Swap">
+                            <svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+                        </button>
+                        <span class="mono" style="font-size:0.65rem; color:var(--text-muted);">TRANSITION</span>
+                    </div>
+
+                    <!-- Identity B -->
+                    <div class="id-card" id="idCardB">
+                        <div class="id-avatar"><svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg></div>
+                        <div class="mono" style="font-size:0.75rem; color:var(--text-muted);">IDENTITY_B</div>
+                        <div class="id-status status-standby" id="statusB">STATE: STANDBY</div>
+                        <div class="mono" style="font-size:0.65rem; color:var(--text-muted); margin-top:4px;">ENV: TEST_LAB</div>
+                    </div>
+                </div>
+                <div class="sim-log" id="simLog">
+                    <div class="log-entry"><span>[00:00:00]</span> System initialized. Waiting for input...</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECURITY -->
+    <section id="security" class="security-section">
+        <div class="container">
+            <div class="reveal">
+                <span class="mono" style="color:var(--accent-danger)">SECURITY PROTOCOLS</span>
+                <h2 style="font-size:2.5rem; margin-top:12px;">POWER REQUIRES BOUNDARIES.</h2>
+                <p style="color:var(--text-secondary); margin-top:16px; max-width:700px;">GhostSwap is intended for educational research, cybersecurity experimentation, and authorized testing. All experiments should take place in isolated environments where explicit permission has been granted.</p>
+            </div>
+            <div class="warning-box reveal">
+                <svg class="warning-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <div class="warning-text">
+                    <h4>AUTHORIZATION REQUIRED</h4>
+                    <p>Never use GhostSwap against systems, accounts, or networks without explicit authorization. Unauthorized activity may violate applicable laws and ethical guidelines. This tool is provided "as-is" for responsible research only.</p>
+                </div>
+            </div>
+            <div class="intro-grid" style="margin-top:40px;">
+                <div class="card reveal" style="border-color:rgba(239,68,68,0.2);"><h3>Authorized Testing Only</h3><p>Operate exclusively within systems you own or have written permission to test.</p></div>
+                <div class="card reveal" style="border-color:rgba(239,68,68,0.2);"><h3>Isolated Environments</h3><p>Use sandboxed labs, VMs, or dedicated test instances. Never production.</p></div>
+                <div class="card reveal" style="border-color:rgba(239,68,68,0.2);"><h3>Responsible Research</h3><p>Document findings responsibly and disclose vulnerabilities through proper channels.</p></div>
+                <div class="card reveal" style="border-color:rgba(239,68,68,0.2);"><h3>Controlled Experimentation</h3><p>Maintain full oversight of all state modifications and session manipulations.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PROJECT INFO -->
+    <section id="info">
+        <div class="container reveal">
+            <span class="mono" style="color:var(--accent-secondary)">TECHNICAL SPECIFICATIONS</span>
+            <h2 style="font-size:2rem; margin-top:12px;">PROJECT METADATA</h2>
+            <div class="info-grid">
+                <div class="info-item"><div class="info-label">PROJECT</div><div class="info-val">GHOSTSWAP</div></div>
+                <div class="info-item"><div class="info-label">CATEGORY</div><div class="info-val">CYBERSECURITY EXP.</div></div>
+                <div class="info-item"><div class="info-label">TYPE</div><div class="info-val">EXPERIMENTAL UTILITY</div></div>
+                <div class="info-item"><div class="info-label">LICENSE</div><div class="info-val">MIT</div></div>
+                <div class="info-item"><div class="info-label">ENVIRONMENT</div><div class="info-val">CONTROLLED LABS</div></div>
+                <div class="info-item"><div class="info-label">SOURCE</div><div class="info-val">GITHUB</div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ROADMAP -->
+    <section id="roadmap">
+        <div class="container">
+            <div class="text-center reveal">
+                <span class="mono" style="color:var(--accent-primary)">DEVELOPMENT TRAJECTORY</span>
+                <h2 style="font-size:2.5rem; margin-top:12px;">THE SYSTEM EVOLVES.</h2>
+            </div>
+            <div class="roadmap reveal">
+                <div class="rm-item current">
+                    <span class="rm-tag current">CURRENT PHASE</span>
+                    <h4>Experimental Utility Release</h4>
+                    <p style="color:var(--text-secondary); font-size:0.9rem; margin-top:8px;">Core identity and session exploration modules. Educational testing workflows. Basic validation logic.</p>
+                </div>
+                <div class="rm-item">
+                    <span class="rm-tag planned">PLANNED</span>
+                    <h4>Expanded Testing Scenarios</h4>
+                    <p style="color:var(--text-secondary); font-size:0.9rem; margin-top:8px;">Additional edge-case simulations and multi-session handling experiments.</p>
+                </div>
+                <div class="rm-item">
+                    <span class="rm-tag planned">PLANNED</span>
+                    <h4>Improved Documentation</h4>
+                    <p style="color:var(--text-secondary); font-size:0.9rem; margin-top:8px;">Comprehensive guides for setting up isolated lab environments safely.</p>
+                </div>
+                <div class="rm-item">
+                    <span class="rm-tag planned">PLANNED</span>
+                    <h4>Advanced Validation Workflows</h4>
+                    <p style="color:var(--text-secondary); font-size:0.9rem; margin-top:8px;">Automated integrity checks and post-transition state verification tools.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section id="about" style="padding-bottom:60px;">
+        <div class="container text-center reveal" style="max-width:700px;">
+            <h2 style="font-size:2rem; margin-bottom:24px;">AN EXPERIMENT IN DIGITAL IDENTITY.</h2>
+            <p style="color:var(--text-secondary); font-size:1.1rem; margin-bottom:32px;">GhostSwap is an independent experimental cybersecurity project exploring identity and session-state behavior through controlled testing workflows. It is designed to support learning, research, and responsible security experimentation.</p>
+            <div style="display:flex; justify-content:center; gap:32px; flex-wrap:wrap;" class="mono">
+                <div><span style="color:var(--text-muted)">STATUS:</span> INDEPENDENT RESEARCH</div>
+                <div><span style="color:var(--text-muted)">FOCUS:</span> IDENTITY & SESSION</div>
+                <div><span style="color:var(--text-muted)">LICENSE:</span> MIT</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section style="padding:120px 0; background:linear-gradient(to top, var(--bg-secondary), transparent);">
+        <div class="container text-center reveal">
+            <h2 style="font-size:clamp(2rem, 4vw, 3.5rem); margin-bottom:24px;">LEAVE NO ASSUMPTIONS <br><span class="gradient-text">UNTESTED.</span></h2>
+            <p style="color:var(--text-secondary); font-size:1.1rem; max-width:600px; margin:0 auto 40px;">Explore the implementation. Understand the mechanisms. Test responsibly.</p>
+            <div style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
+                <a href="https://github.com/D3V1L96/GhostSwap" target="_blank" class="btn btn-primary">ACCESS SOURCE CODE</a>
+                <a href="#" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;" class="btn btn-secondary">BACK TO TOP</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="#" class="logo">
+                        <svg viewBox="0 0 24 24" style="width:24px;height:24px;stroke:var(--accent-primary);fill:none;stroke-width:2;"><path d="M12 2C8 2 4 5 4 9c0 4 3 7 3 11h10c0-4 3-7 3-11 0-4-4-7-8-7z"/><circle cx="9" cy="9" r="1.5"/><circle cx="15" cy="9" r="1.5"/></svg>
+                        GHOSTSWAP
+                    </a>
+                    <p>"Control the Identity. Control the Reality."</p>
+                </div>
+                <div class="footer-col">
+                    <h4>NAVIGATION</h4>
+                    <a href="#overview">Overview</a>
+                    <a href="#capabilities">Capabilities</a>
+                    <a href="#security">Security</a>
+                    <a href="#about">About</a>
+                </div>
+                <div class="footer-col">
+                    <h4>RESOURCES</h4>
+                    <a href="https://github.com/D3V1L96/GhostSwap" target="_blank">GitHub Repository</a>
+                    <a href="#architecture">Architecture</a>
+                    <a href="#demo">State Simulator</a>
+                    <a href="#roadmap">Roadmap</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>&copy; 2026 GhostSwap. Independent Cybersecurity Research Project.</span>
+                <span>EXPERIMENTAL SYSTEM // MIT LICENSE</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- CINEMATIC LOADER ---
+            const loader = document.getElementById('loader');
+            const loaderText = document.getElementById('loaderText');
+            const loaderBar = document.getElementById('loaderBar');
+            const loaderPercent = document.getElementById('loaderPercent');
+            
+            const messages = [
+                "ESTABLISHING SECURE ENVIRONMENT...",
+                "INITIALIZING IDENTITY MODULES...",
+                "PREPARING CONTROLLED WORKSPACE...",
+                "VALIDATING SYSTEM INTERFACE...",
+                "ENVIRONMENT READY."
+            ];
+            
+            let progress = 0;
+            let msgIndex = 0;
+            
+            // Check reduced motion preference
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            
+            if (prefersReducedMotion) {
+                document.body.classList.add('loaded');
+            } else {
+                const interval = setInterval(() => {
+                    progress += Math.random() * 8 + 2;
+                    if (progress > 100) progress = 100;
+                    
+                    loaderBar.style.width = `${progress}%`;
+                    loaderPercent.textContent = `${Math.floor(progress)}%`;
+                    
+                    // Update message based on progress thresholds
+                    const newMsgIndex = Math.min(Math.floor(progress / 20), messages.length - 1);
+                    if (newMsgIndex !== msgIndex) {
+                        msgIndex = newMsgIndex;
+                        loaderText.textContent = messages[msgIndex];
+                    }
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        loaderText.textContent = "SYSTEM READY";
+                        setTimeout(() => {
+                            document.body.classList.add('loaded');
+                        }, 600);
+                    }
+                }, 80);
+            }
+
+            // --- MOBILE MENU ---
+            const toggle = document.querySelector('.mobile-toggle');
+            const menu = document.getElementById('mobileMenu');
+            toggle.addEventListener('click', () => {
+                menu.classList.toggle('open');
+                toggle.setAttribute('aria-expanded', menu.classList.contains('open'));
+            });
+            menu.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => menu.classList.remove('open'));
+            });
+
+            // --- SCROLL REVEAL ---
+            const revealElements = document.querySelectorAll('.reveal');
+            const revealObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        revealObserver.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+            revealElements.forEach(el => revealObserver.observe(el));
+
+            // --- ACTIVE NAV STATE ---
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.nav-links a');
+            const navObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === `#${entry.target.id}`) link.classList.add('active');
+                        });
+                    }
+                });
+            }, { threshold: 0.3, rootMargin: '-80px 0px -50% 0px' });
+            sections.forEach(section => navObserver.observe(section));
+
+            // --- NAVBAR SCROLL EFFECT ---
+            const navbar = document.getElementById('navbar');
+            window.addEventListener('scroll', () => {
+                navbar.style.background = window.scrollY > 50 ? 'rgba(7, 7, 9, 0.95)' : 'rgba(7, 7, 9, 0.8)';
+            }, { passive: true });
+
+            // --- INTERACTIVE STATE SIMULATOR ---
+            const swapBtn = document.getElementById('swapBtn');
+            const idCardA = document.getElementById('idCardA');
+            const idCardB = document.getElementById('idCardB');
+            const statusA = document.getElementById('statusA');
+            const statusB = document.getElementById('statusB');
+            const simLog = document.getElementById('simLog');
+            let isSwapping = false;
+            let aActive = true;
+
+            function addLog(msg) {
+                const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+                const entry = document.createElement('div');
+                entry.className = 'log-entry';
+                entry.innerHTML = `<span>[${time}]</span> ${msg}`;
+                simLog.appendChild(entry);
+                simLog.scrollTop = simLog.scrollHeight;
+            }
+
+            swapBtn.addEventListener('click', () => {
+                if (isSwapping) return;
+                isSwapping = true;
+                swapBtn.classList.add('animating');
+                addLog("Initiating state transition sequence...");
+
+                setTimeout(() => {
+                    aActive = !aActive;
+                    if (aActive) {
+                        idCardA.classList.add('active');
+                        idCardB.classList.remove('active');
+                        statusA.textContent = "STATE: ACTIVE";
+                        statusA.className = "id-status status-active";
+                        statusB.textContent = "STATE: STANDBY";
+                        statusB.className = "id-status status-standby";
+                        addLog("Transition complete. IDENTITY_A now active.");
+                    } else {
+                        idCardA.classList.remove('active');
+                        idCardB.classList.add('active');
+                        statusA.textContent = "STATE: STANDBY";
+                        statusA.className = "id-status status-standby";
+                        statusB.textContent = "STATE: ACTIVE";
+                        statusB.className = "id-status status-active";
+                        addLog("Transition complete. IDENTITY_B now active.");
+                    }
+                    swapBtn.classList.remove('animating');
+                    isSwapping = false;
+                }, 500);
+            });
+        });
+    </script>
+</body>
+</html>
+```
